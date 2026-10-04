@@ -175,6 +175,7 @@ void print_cpu_vendor(void) {
 #include "capability.h"
 #include "ipc.h"
 #include "sched.h"
+#include "installer.h"
 
 // =============================================================================
 // VortecoreOS In-Memory File System (RAMFS) & PS/2 Interactive Shell
@@ -333,6 +334,7 @@ void shell_execute(char* cmd) {
         kprint("  ipctest           Test Lock-Free Ring Buffer IPC\n");
         kprint("  rtostest          Test Deterministic Hard Real-Time Scheduler\n");
         kprint("  moglinux          Display Linux comparison & microkernel benchmarks\n");
+        kprint("  install           Run Linux-style OS installer wizard on /dev/sda\n");
         kprint("  meminfo           Display physical RAM & page tables\n");
         kprint("  spawn <prog>      Spawn user-space app in isolated page space\n");
         kprint("  exec <elf_file>   Parse & execute 64-bit ELF binary in Ring 3\n");
@@ -606,6 +608,9 @@ void shell_execute(char* cmd) {
         kprint("  Kernel Codebase Size  | 35,000,000+ Lines C     | ~1,200 Lines Freestanding\n");
         kprint("  Privilege Architecture| Drivers run in Ring 0   | Drivers isolated in Ring 3\n");
         kprint("  Attack Surface        | Massive (All Ring 0)    | Mathematically Minimal\n\n");
+    }
+    else if (kstrcmp(cmd, "install") == 0) {
+        installer_run();
     }
     else if (kstrcmp(cmd, "clear") == 0) {
         terminal_clear();

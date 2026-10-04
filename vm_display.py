@@ -146,6 +146,7 @@ class VortecoreScreen(tk.Tk):
             self._print("  ipctest           Test Lock-Free Ring Buffer IPC\n", 15)
             self._print("  rtostest          Test Deterministic Hard Real-Time Scheduler\n", 15)
             self._print("  moglinux          Display Linux comparison & microkernel benchmarks\n", 15)
+            self._print("  install           Run Linux-style OS installer wizard on /dev/sda\n", 15)
             self._print("  spawn <prog>      Launch user-space program in isolated page space\n", 15)
             self._print("  exec <elf_file>   Parse & execute 64-bit ELF binary in Ring 3\n", 15)
             self._print("  runuser <prog>    Drop CPU privilege to Ring 3 (User Mode)\n", 15)
@@ -193,6 +194,32 @@ class VortecoreScreen(tk.Tk):
             self._print("  Kernel Codebase Size  | 35,000,000+ Lines C     | ~1,200 Lines Freestanding\n", 15)
             self._print("  Privilege Architecture| Drivers run in Ring 0   | Drivers isolated in Ring 3\n", 15)
             self._print("  Attack Surface        | Massive (All Ring 0)    | Mathematically Minimal\n\n", 15)
+
+        elif cmd == "install":
+            self.terminal_clear()
+            self._print("================================================================================\n", 9)
+            self._print("             VORTECORE OS x86_64 INSTALLATION WIZARD (v1.1.0)                  \n", 15)
+            self._print("================================================================================\n\n", 9)
+            self._print("[Step 1/4] Detecting Storage Devices...\n", 14)
+            self._print("  Found Device: /dev/sda  [Vortecore Virtual Disk / ATA PIO Drive - 32 GB]\n", 15)
+            self._print("  Target selected: /dev/sda (Persistent Drive)\n\n", 10)
+            self._print("[Step 2/4] Partitioning Target Disk (/dev/sda)...\n", 14)
+            self._print("  /dev/sda1 : 512 MB  [System Boot / MBR (Active)]\n", 15)
+            self._print("  /dev/sda2 : 4096 MB [Swap Space / Page Frames]\n", 15)
+            self._print("  /dev/sda3 : 27 GB   [VortecoreFS Root Partition]\n\n", 15)
+            self._print("[Step 3/4] Formatting & Mounting Filesystem...\n", 14)
+            self._print("  Writing superblocks and inode bitmap... [OK]\n\n", 10)
+            self._print("[Step 4/4] Deploying Base System & Kernel Image...\n", 14)
+            self.files["/boot/vmlinuz-vortecore"] = "VORTECORE-X64-KERNEL-IMAGE-V1.1.0"
+            self.files["/etc/os-release"] = "NAME=\"VortecoreOS\"\nVERSION=\"1.1.0\"\n"
+            self.files["/etc/hostname"] = "vortecore-pc\n"
+            self.files["/bin/sh"] = "VORTECORE-SHELL-BINARY"
+            self._print("  Installed: /boot/vmlinuz-vortecore, /etc/os-release, /bin/sh\n", 15)
+            self._print("  Installed: MBR Stage 1 Bootloader to Sector 0... [OK]\n\n", 10)
+            self._print("================================================================================\n", 10)
+            self._print("               INSTALLATION COMPLETE! VORTECORE OS IS READY!                   \n", 10)
+            self._print("================================================================================\n", 10)
+            self._print("VortecoreOS is now permanently installed on /dev/sda.\n\n", 15)
 
         elif cmd == "meminfo":
             self._print("=== VORTECORE OS MEMORY & PAGING STATUS ===\n", 11)

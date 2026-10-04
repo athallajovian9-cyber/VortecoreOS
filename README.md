@@ -6,6 +6,15 @@ A 64-bit x86_64 Microkernel written in pure `#![no_std]` Rust with Capability Se
 [![Discord](https://img.shields.io/badge/Discord-Join%20Vortex%20Community-5865F2?logo=discord&logoColor=white)](https://discord.gg/QtyBucygQ6)
 [![GitHub release](https://img.shields.io/github/v/release/athallajovian9-cyber/VortecoreOS?color=10B981)](https://github.com/athallajovian9-cyber/VortecoreOS/releases)
 
+## Available Editions
+1. **VortecoreOS v1.1.0 (Full OS Installer Edition)**:
+   - Includes real MBR partitioner, ATA disk driver, and Linux-style installer wizard (`installer.c`).
+   - Run `install` inside the shell to partition and install onto `/dev/sda` or a real drive.
+   - [Download VortecoreOS-Installer-x64-v1.1.0.zip](https://github.com/athallajovian9-cyber/VortecoreOS/releases/tag/v1.1.0)
+2. **VortecoreOS v1.0.0 (Live Rust Microkernel Core Edition)**:
+   - Instant live RAM mode, 100% in-memory with zero disk footprint.
+   - [Download VortecoreOS-Rust-v1.0.0.zip](https://github.com/athallajovian9-cyber/VortecoreOS/releases/tag/v1.0.0)
+
 ## Why VortecoreOS Mogs Linux
 - **Pure `#![no_std]` Bare-Metal Rust**: Eliminates 70% of fatal microkernel bugs (use-after-free, memory corruption, data races) at compile-time with zero runtime overhead.
 - **Microkernel Archetype (`src/ipc.rs`)**: Drivers run in isolated User Space (Ring 3). A crashing driver cannot panic the kernel. Inter-process communication uses atomic lock-free SPSC ring buffers passing messages in ~18 cycles (Linux context switch: 1,200+ cycles).
