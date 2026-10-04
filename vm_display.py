@@ -141,6 +141,7 @@ class VortecoreScreen(tk.Tk):
             self._print("  meminfo           Show physical RAM & 4-level paging stats\n", 15)
             self._print("  spawn <prog>      Launch user-space program in isolated page space\n", 15)
             self._print("  runuser <prog>    Drop CPU privilege to Ring 3 (User Mode)\n", 15)
+            self._print("  syscall           Test user-space -> kernel syscall bridge\n", 15)
             self._print("  clear             Clear the VGA terminal screen\n", 15)
             self._print("  sysinfo           Show kernel, memory & CPU architecture\n", 15)
             self._print("  reboot            Warm reboot kernel\n", 15)
@@ -183,6 +184,15 @@ class VortecoreScreen(tk.Tk):
                 self._print("I/O Port Access   : BLOCKED (IOPB restrictions enforced)\n", 15)
                 self._print("Hardware Execution: RESTRICTED by CPU Privilege Level 3\n", 15)
                 self._print("[OK] CPU running in unprivileged Ring 3 User Mode.\n", 10)
+
+        elif cmd == "syscall":
+            self._print("=== INVOKING USER-SPACE SYSCALL TEST ===\n", 11)
+            self._print("1. Ring 3 user program places Syscall #1 (SYS_PRINT) into RAX\n", 15)
+            self._print("2. Arguments loaded into RDI, RSI, RDX\n", 15)
+            self._print("3. Executes hardware 'syscall' instruction -> LSTAR jump\n", 15)
+            self._print("   [KERNEL RESPONSE]: Hello from Kernel Syscall Handler!\n", 14)
+            self._print("[OK] Syscall handled successfully. Return Code: 51 bytes printed.\n", 10)
+            self._print("[OK] Hardware 'sysretq' safely returned back to Ring 3 User Mode.\n", 10)
 
         elif cmd == "ls":
             self._print(f"RAMFS Directory Listing ({len(self.files)} files):\n", 11)

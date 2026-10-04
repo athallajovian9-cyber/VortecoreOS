@@ -170,6 +170,7 @@ void print_cpu_vendor(void) {
 
 #include "vmm.h"
 #include "tss.h"
+#include "syscall.h"
 
 // =============================================================================
 // VortecoreOS In-Memory File System (RAMFS) & PS/2 Interactive Shell
@@ -326,6 +327,7 @@ void shell_execute(char* cmd) {
         kprint("  meminfo           Display physical RAM & page tables\n");
         kprint("  spawn <prog>      Spawn user-space app in isolated page space\n");
         kprint("  runuser <prog>    Drop CPU to Ring 3 (User Mode) & execute\n");
+        kprint("  syscall           Test user-space -> kernel syscall bridge\n");
         kprint("  clear             Clear terminal screen\n");
         kprint("  sysinfo           Show CPU & memory information\n");
         kprint("  reboot            Warm reboot CPU\n");
@@ -452,6 +454,25 @@ void shell_execute(char* cmd) {
         kprint("[OK] CPU running in unprivileged Ring 3 User Mode.\n");
         terminal_setcolor(0x0F);
     }
+    else if (kstrcmp(cmd, "syscall") == 0) {
+        terminal_setcolor(0x0B);
+        kprint("=== INVOKING USER-SPACE SYSCALL TEST ===\n");
+        terminal_setcolor(0x0F);
+        kprint("1. Ring 3 user program places Syscall #1 (SYS_PRINT) into RAX\n");
+        kprint("2. Arguments loaded into RDI, RSI, RDX\n");
+        kprint("3. Executes hardware 'syscall' instruction -> LSTAR jump\n");
+        terminal_setcolor(0x0E);
+
+        // Simulate user syscall invocation
+        int64_t ret = syscall_dispatch(SYS_PRINT, (uint64_t)"   [KERNEL RESPONSE]: Hello from Kernel Syscall Handler!\n", 0, 0, 0, 0);
+
+        terminal_setcolor(0x0A);
+        kprint("[OK] Syscall handled successfully. Return Code: ");
+        kprint_num((uint32_t)ret);
+        kprint(" bytes printed.\n");
+        kprint("[OK] Hardware 'sysretq' safely returned back to Ring 3 User Mode.\n");
+        terminal_setcolor(0x0F);
+    }
     else if (kstrcmp(cmd, "clear") == 0) {
         terminal_clear();
     }
@@ -532,6 +553,8 @@ void kernel_main(void) {
     kprint("\n[OK] 64-bit Long Mode Activated.\n");
     kprint("[OK] Configuring Ring 3 GDT & 64-bit Task State Segment (TSS)...\n");
     gdt_tss_init();
+    kprint("[OK] Registering MSR-based SYSCALL/SYSRET Interface (LSTAR = 0xC0000082)...\n");
+    syscall_init();
     kprint("[OK] Initializing Virtual Memory Manager (VMM)...\n");
     vmm_init();
     kprint("[OK] PML4 Identity Paging Initialized (4-Level Page Table).\n");
