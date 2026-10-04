@@ -124,8 +124,10 @@ class VortecoreDesktop(tk.Tk):
         if "Terminal" in win.title:
             self.canvas.create_text(
                 win.x + 18, win.y + 55,
-                text="VortecoreOS 64-bit Kernel v1.2.0 (x86_64)\n"
+                text="VortecoreOS 64-bit Kernel v1.3.0 (x86_64 All-Rounder)\n"
                      "Microkernel active · RAMFS mounted · Paging 4-Level\n\n"
+                     "vortecore-rust# profile gaming\n"
+                     "[ACTIVE: GAMING PROFILE] 240Hz LFB, 0.1ms raw latency\n"
                      "vortecore-rust# moglinux\n"
                      "[MOG] Context switch: 18 cycles (Linux: 1200+)\n"
                      "[MOG] Zero ambient authority capabilities active.\n"

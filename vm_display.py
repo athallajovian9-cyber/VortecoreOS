@@ -145,6 +145,7 @@ class VortecoreScreen(tk.Tk):
             self._print("  captest           Test Zero-Ambient Capability tokens\n", 15)
             self._print("  ipctest           Test Lock-Free Ring Buffer IPC\n", 15)
             self._print("  rtostest          Test Deterministic Hard Real-Time Scheduler\n", 15)
+            self._print("  profile <mode>    Switch profile (gaming, dev, rtos, hardened, balanced)\n", 15)
             self._print("  moglinux          Display Linux comparison & microkernel benchmarks\n", 15)
             self._print("  install           Run Linux-style OS installer wizard on /dev/sda\n", 15)
             self._print("  spawn <prog>      Launch user-space program in isolated page space\n", 15)
@@ -183,6 +184,31 @@ class VortecoreScreen(tk.Tk):
             self._print("  • PID 3: [Vortecore Interactive Shell] Prio: 2 (PRIORITY_NORMAL)\n", 15)
             self._print("Simulating Hardware Timer Interrupt (PIT IRQ0)...\n", 14)
             self._print("[OK] Deterministic Preemption: Jitter = 0.00 ns. Real-Time task guaranteed CPU.\n", 10)
+
+        elif cmd.startswith("profile "):
+            p = cmd[8:].strip()
+            self._print("=== VORTECORE ALL-ROUNDER PROFILE SWITCH ===\n", 11)
+            if p == "gaming":
+                self._print("[ACTIVE: GAMING PROFILE]\n", 10)
+                self._print("  • 240Hz Uncapped Linear Framebuffer Compositor active\n", 15)
+                self._print("  • Raw unbuffered PS/2 / USB HID input latency: ~0.1 ms\n", 15)
+                self._print("  • CPU Priority: Core threads pinned, zero background jitter\n", 15)
+            elif p == "dev":
+                self._print("[ACTIVE: DEVELOPER PROFILE]\n", 10)
+                self._print("  • ELF-64 loader & symbol resolver active\n", 15)
+                self._print("  • Full standard libc runtime (printf, malloc, open, write)\n", 15)
+                self._print("  • Syscall tracing & page fault diagnostics enabled\n", 15)
+            elif p == "rtos":
+                self._print("[ACTIVE: HARD REAL-TIME SERVER / HFT PROFILE]\n", 10)
+                self._print("  • 0.00 ns jitter deterministic O(1) preemptive scheduler\n", 15)
+                self._print("  • SPSC lock-free ring buffer queues (18 cycle context switches)\n", 15)
+            elif p == "hardened":
+                self._print("[ACTIVE: HARDENED MILITARY-GRADE CAPABILITY PROFILE]\n", 10)
+                self._print("  • Zero ambient authority: All operations require signed tokens\n", 15)
+                self._print("  • Ring 3 memory isolation: User code restricted from supervisor pages\n", 15)
+            else:
+                self._print("[ACTIVE: BALANCED EVERYDAY PROFILE]\n", 10)
+                self._print("  • General desktop computing, RAMFS filesystem, and multitasking\n", 15)
 
         elif cmd == "moglinux":
             self._print("                  VORTECORE OS  vs.  MONOLITHIC LINUX                   \n", 15)
