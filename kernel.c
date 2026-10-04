@@ -169,6 +169,285 @@ void print_cpu_vendor(void) {
 }
 
 // =============================================================================
+// VortecoreOS In-Memory File System (RAMFS) & PS/2 Interactive Shell
+// =============================================================================
+#define KBD_DATA_PORT   0x60
+#define KBD_STATUS_PORT 0x64
+
+#define MAX_FILES       16
+#define MAX_FILENAME    32
+#define MAX_FILE_SIZE   1024
+#define INPUT_BUFFER_SZ 128
+
+int kstrcmp(const char* s1, const char* s2) {
+    while (*s1 && (*s1 == *s2)) {
+        s1++;
+        s2++;
+    }
+    return *(const unsigned char*)s1 - *(const unsigned char*)s2;
+}
+
+int kstrncmp(const char* s1, const char* s2, uint32_t n) {
+    while (n && *s1 && (*s1 == *s2)) {
+        s1++;
+        s2++;
+        n--;
+    }
+    if (n == 0) return 0;
+    return *(const unsigned char*)s1 - *(const unsigned char*)s2;
+}
+
+uint32_t kstrlen(const char* s) {
+    uint32_t len = 0;
+    while (s[len]) len++;
+    return len;
+}
+
+void kstrcpy(char* dest, const char* src) {
+    while (*src) *dest++ = *src++;
+    *dest = '\0';
+}
+
+void kmemset(void* dest, uint8_t val, uint32_t count) {
+    uint8_t* d = (uint8_t*)dest;
+    while (count--) *d++ = val;
+}
+
+void kmemcpy(void* dest, const void* src, uint32_t count) {
+    char* d = (char*)dest;
+    const char* s = (const char*)src;
+    while (count--) *d++ = *s++;
+}
+
+void kprint_num(uint32_t num) {
+    if (num == 0) {
+        terminal_putchar('0');
+        return;
+    }
+    char buf[12];
+    int i = 0;
+    while (num > 0) {
+        buf[i++] = (num % 10) + '0';
+        num /= 10;
+    }
+    while (i > 0) terminal_putchar(buf[--i]);
+}
+
+typedef struct {
+    char name[MAX_FILENAME];
+    uint32_t size;
+    uint8_t data[MAX_FILE_SIZE];
+    uint8_t used;
+} RamFile;
+
+static RamFile file_system[MAX_FILES];
+static uint32_t total_files = 0;
+
+int vfs_create(const char* name, const char* content) {
+    for (int i = 0; i < MAX_FILES; i++) {
+        if (!file_system[i].used) {
+            kstrcpy(file_system[i].name, name);
+            uint32_t len = kstrlen(content);
+            if (len >= MAX_FILE_SIZE) len = MAX_FILE_SIZE - 1;
+            kmemcpy(file_system[i].data, content, len);
+            file_system[i].data[len] = '\0';
+            file_system[i].size = len;
+            file_system[i].used = 1;
+            total_files++;
+            return 0;
+        }
+    }
+    return -1;
+}
+
+void vfs_init(void) {
+    kmemset(file_system, 0, sizeof(file_system));
+    total_files = 0;
+    vfs_create("readme.txt", "Welcome to VortecoreOS x86_64!\nCustom microkernel with RAMFS and interactive shell.\n");
+    vfs_create("version.sys", "VortecoreOS Kernel 64-bit v0.4.0-release\n");
+    vfs_create("motd", "Tip: Type 'help' to see all built-in commands.\n");
+}
+
+RamFile* vfs_lookup(const char* name) {
+    for (int i = 0; i < MAX_FILES; i++) {
+        if (file_system[i].used && kstrcmp(file_system[i].name, name) == 0) {
+            return &file_system[i];
+        }
+    }
+    return 0;
+}
+
+int vfs_delete(const char* name) {
+    for (int i = 0; i < MAX_FILES; i++) {
+        if (file_system[i].used && kstrcmp(file_system[i].name, name) == 0) {
+            file_system[i].used = 0;
+            total_files--;
+            return 0;
+        }
+    }
+    return -1;
+}
+
+static const char kbd_scancode_table[128] = {
+    0,  27, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', '\b',
+  '\t', 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '[', ']', '\n',
+    0,  'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';', '\'', '`',
+    0, '\\', 'z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '/',   0,
+  '*',   0, ' ',   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+};
+
+char kbd_getchar(void) {
+    while (1) {
+        if (inb(KBD_STATUS_PORT) & 1) {
+            uint8_t scancode = inb(KBD_DATA_PORT);
+            if (!(scancode & 0x80)) {
+                char ch = kbd_scancode_table[scancode & 0x7F];
+                if (ch) return ch;
+            }
+        }
+    }
+}
+
+void shell_execute(char* cmd) {
+    while (*cmd == ' ') cmd++;
+    if (*cmd == '\0') return;
+
+    if (kstrcmp(cmd, "help") == 0) {
+        terminal_setcolor(0x0E);
+        kprint("Available commands:\n");
+        kprint("  help              Show this command list\n");
+        kprint("  ls                List files in RAMFS\n");
+        kprint("  cat <filename>    Display file contents\n");
+        kprint("  touch <filename>  Create a new empty file\n");
+        kprint("  rm <filename>     Delete a file from RAMFS\n");
+        kprint("  clear             Clear terminal screen\n");
+        kprint("  sysinfo           Show CPU & memory information\n");
+        kprint("  reboot            Warm reboot CPU\n");
+        terminal_setcolor(0x0F);
+    }
+    else if (kstrcmp(cmd, "ls") == 0) {
+        terminal_setcolor(0x0B);
+        kprint("RAMFS Directory Listing (");
+        kprint_num(total_files);
+        kprint(" files):\n");
+        terminal_setcolor(0x0F);
+        for (int i = 0; i < MAX_FILES; i++) {
+            if (file_system[i].used) {
+                kprint("  ");
+                kprint(file_system[i].name);
+                kprint("  (");
+                kprint_num(file_system[i].size);
+                kprint(" bytes)\n");
+            }
+        }
+    }
+    else if (kstrncmp(cmd, "cat ", 4) == 0) {
+        const char* fname = cmd + 4;
+        RamFile* f = vfs_lookup(fname);
+        if (f) {
+            terminal_setcolor(0x0F);
+            kprint((const char*)f->data);
+            if (f->data[f->size - 1] != '\n') kprint("\n");
+        } else {
+            terminal_setcolor(0x0C);
+            kprint("cat: file not found: ");
+            kprint(fname);
+            kprint("\n");
+            terminal_setcolor(0x0F);
+        }
+    }
+    else if (kstrncmp(cmd, "touch ", 6) == 0) {
+        const char* fname = cmd + 6;
+        if (vfs_lookup(fname)) {
+            terminal_setcolor(0x0E);
+            kprint("touch: file already exists\n");
+        } else if (vfs_create(fname, "") == 0) {
+            terminal_setcolor(0x0A);
+            kprint("Created file: ");
+            kprint(fname);
+            kprint("\n");
+        } else {
+            terminal_setcolor(0x0C);
+            kprint("touch: file system is full\n");
+        }
+        terminal_setcolor(0x0F);
+    }
+    else if (kstrncmp(cmd, "rm ", 3) == 0) {
+        const char* fname = cmd + 3;
+        if (vfs_delete(fname) == 0) {
+            terminal_setcolor(0x0A);
+            kprint("Deleted file: ");
+            kprint(fname);
+            kprint("\n");
+        } else {
+            terminal_setcolor(0x0C);
+            kprint("rm: file not found: ");
+            kprint(fname);
+            kprint("\n");
+        }
+        terminal_setcolor(0x0F);
+    }
+    else if (kstrcmp(cmd, "clear") == 0) {
+        terminal_clear();
+    }
+    else if (kstrcmp(cmd, "sysinfo") == 0) {
+        terminal_setcolor(0x0B);
+        kprint("=== VORTECORE OS SYSTEM INFORMATION ===\n");
+        terminal_setcolor(0x0F);
+        kprint("Architecture : x86_64 Long Mode (64-Bit)\n");
+        kprint("Paging Model : 4-Level Paging (PML4, PDPT, PDT, PT)\n");
+        kprint("File System  : RAMFS In-Memory Virtual File System\n");
+        kprint("Max Files    : 16 (1KB Max payload per file)\n");
+        kprint("Console      : 80x25 VGA Color Framebuffer (0xB8000)\n");
+    }
+    else if (kstrcmp(cmd, "reboot") == 0) {
+        kprint("Rebooting system...\n");
+        uint8_t good = 0x02;
+        while (good & 0x02) good = inb(KBD_STATUS_PORT);
+        outb(KBD_STATUS_PORT, 0xFE);
+    }
+    else {
+        terminal_setcolor(0x0C);
+        kprint("Unknown command: '");
+        kprint(cmd);
+        kprint("'. Type 'help' for commands.\n");
+        terminal_setcolor(0x0F);
+    }
+}
+
+void shell_run(void) {
+    char input_buf[INPUT_BUFFER_SZ];
+    uint32_t input_len = 0;
+
+    terminal_setcolor(0x0A);
+    kprint("\nvortecore-x64> ");
+    terminal_setcolor(0x0F);
+
+    while (1) {
+        char ch = kbd_getchar();
+        if (ch == '\n') {
+            terminal_putchar('\n');
+            input_buf[input_len] = '\0';
+            shell_execute(input_buf);
+            input_len = 0;
+            terminal_setcolor(0x0A);
+            kprint("vortecore-x64> ");
+            terminal_setcolor(0x0F);
+        }
+        else if (ch == '\b') {
+            if (input_len > 0) {
+                input_len--;
+                terminal_putchar('\b');
+            }
+        }
+        else if (input_len < INPUT_BUFFER_SZ - 1) {
+            input_buf[input_len++] = ch;
+            terminal_putchar(ch);
+        }
+    }
+}
+
+// =============================================================================
 // 64-bit Kernel Entry Point (Called by Stage 2 Bootloader)
 // =============================================================================
 void kernel_main(void) {
@@ -189,6 +468,9 @@ void kernel_main(void) {
     kprint("[OK] PML4 Identity Paging Initialized (4-Level Page Table).\n");
     kprint("[OK] GDT 64-bit Segments Loaded.\n");
     kprint("[OK] COM1 Serial Port (0x3F8) ready for diagnostics.\n");
+    vfs_init();
+    kprint("[OK] In-memory RAMFS Virtual File System Initialized.\n");
+    kprint("[OK] PS/2 Keyboard Driver Active.\n");
 
     print_cpu_vendor();
 
@@ -197,18 +479,7 @@ void kernel_main(void) {
     kprint("\n");
     kprint("Page Table Base  : ");
     kprint_hex(0x1000);
-    kprint("\n\n");
+    kprint("\n");
 
-    // Shell prompt
-    terminal_setcolor(0x0A); // Light Green
-    kprint("vortecore-x64# ");
-    terminal_setcolor(0x0E); // Yellow
-    kprint("kernel idle loop running. Ready for tasks.\n");
-
-    serial_write("[VortecoreOS] Kernel fully booted and active.\n");
-
-    // Kernel idle halt loop
-    while (1) {
-        __asm__ volatile ("hlt");
-    }
+    shell_run();
 }

@@ -39,44 +39,167 @@ class VortecoreScreen(tk.Tk):
         self.canvas = tk.Canvas(self, width=800, height=480, bg="#000000", highlightthickness=0)
         self.canvas.pack(padx=10, pady=10)
 
+        self.cursor_row = 0
+        self.cursor_col = 0
+        self.input_buffer = ""
+        self.prompt = "vortecore-x64> "
+
+        # In-memory RAMFS filesystem
+        self.files: dict[str, str] = {
+            "readme.txt": "Welcome to VortecoreOS x86_64!\nCustom microkernel with RAMFS and interactive shell.\n",
+            "version.sys": "VortecoreOS Kernel 64-bit v0.4.0-release\n",
+            "motd": "Tip: Type 'help' to see all built-in commands.\n",
+        }
+
+        self.bind("<Key>", self._on_key)
         self._boot()
 
     def _boot(self):
-        if not BOOT_IMG.is_file():
-            print("boot.img not found!")
+        self.terminal_clear()
+
+        # Top banner
+        banner = "   VORTECORE OS x86_64 -- MICROKERNEL, RAMFS & INTERACTIVE SHELL   "
+        col = (80 - len(banner)) // 2
+        self._write_str(0, col, "═" * len(banner), 9, 1)
+        self._write_str(1, col, banner, 15, 1)
+        self._write_str(2, col, "═" * len(banner), 9, 1)
+
+        self._print("\n[OK] 64-bit Long Mode Initialized (AMD64 / Intel 64).\n", 10)
+        self._print("[OK] PML4 Paging & GDT64 Active.\n", 10)
+        self._print("[OK] In-memory RAMFS Virtual File System Mounted.\n", 10)
+        self._print("[OK] PS/2 Keyboard Driver Active.\n", 10)
+        self._print("[OK] Interactive Shell REPL Active.\n\n", 14)
+
+        self._print_prompt()
+        self._render()
+
+    def _print_prompt(self):
+        self._print(self.prompt, 10)
+
+    def _print(self, text: str, fg: int = 15, bg: int = 0):
+        for ch in text:
+            if ch == "\n":
+                self.cursor_col = 0
+                self.cursor_row += 1
+                if self.cursor_row >= 25:
+                    self._scroll()
+            elif ch == "\r":
+                self.cursor_col = 0
+            elif ch == "\b":
+                if self.cursor_col > 0:
+                    self.cursor_col -= 1
+                    self.grid_data[self.cursor_row][self.cursor_col] = " "
+            else:
+                if 0 <= self.cursor_row < 25 and 0 <= self.cursor_col < 80:
+                    self.grid_data[self.cursor_row][self.cursor_col] = ch
+                    self.fg_data[self.cursor_row][self.cursor_col] = fg
+                    self.bg_data[self.cursor_row][self.cursor_col] = bg
+                    self.cursor_col += 1
+                    if self.cursor_col >= 80:
+                        self.cursor_col = 0
+                        self.cursor_row += 1
+                        if self.cursor_row >= 25:
+                            self._scroll()
+
+    def _scroll(self):
+        for y in range(24):
+            for x in range(80):
+                self.grid_data[y][x] = self.grid_data[y + 1][x]
+                self.fg_data[y][x] = self.fg_data[y + 1][x]
+                self.bg_data[y][x] = self.bg_data[y + 1][x]
+        for x in range(80):
+            self.grid_data[24][x] = " "
+            self.fg_data[24][x] = 7
+            self.bg_data[24][x] = 0
+        self.cursor_row = 24
+
+    def terminal_clear(self):
+        for y in range(25):
+            for x in range(80):
+                self.grid_data[y][x] = " "
+                self.fg_data[y][x] = 7
+                self.bg_data[y][x] = 0
+        self.cursor_row = 0
+        self.cursor_col = 0
+
+    def _execute_command(self, cmd: str):
+        cmd = cmd.strip()
+        if not cmd:
             return
 
-        raw = BOOT_IMG.read_bytes()
-        print(f"BIOS read MBR: {len(raw)} bytes.")
+        if cmd == "help":
+            self._print("Available VortecoreOS commands:\n", 14)
+            self._print("  help              Show this list of commands\n", 15)
+            self._print("  ls                List files stored in RAMFS\n", 15)
+            self._print("  cat <filename>    Display file contents\n", 15)
+            self._print("  touch <filename>  Create a new file in RAMFS\n", 15)
+            self._print("  rm <filename>     Delete a file from RAMFS\n", 15)
+            self._print("  clear             Clear the VGA terminal screen\n", 15)
+            self._print("  sysinfo           Show kernel, memory & CPU architecture\n", 15)
+            self._print("  reboot            Warm reboot kernel\n", 15)
 
-        # Header BIOS log for 64-bit Long Mode
-        self._write_str(0, 0, "BIOS ACPI 2.0 - Starting VortecoreOS...", 10, 0)
-        self._write_str(1, 0, "[OK] Found MBR Boot Signature (0xAA55) at 0x7DFE", 2, 0)
-        self._write_str(2, 0, "[OK] Fast A20 Gate enabled via Port 0x92", 2, 0)
-        self._write_str(3, 0, "[OK] CPUID verified: AMD64 / Intel 64 Long Mode available", 2, 0)
-        self._write_str(4, 0, "[OK] Initialized 4-Level 64-bit Paging (PML4, PDPT, PDT, PT)", 2, 0)
-        self._write_str(5, 0, "[OK] Switched CPU to 64-bit Long Mode (EFER.LME = 1, CR0.PG = 1)", 3, 0)
-        self._write_str(6, 0, "[OK] Loaded Kernel Image into Memory (0x100000) -> kernel_main()", 11, 0)
+        elif cmd == "ls":
+            self._print(f"RAMFS Directory Listing ({len(self.files)} files):\n", 11)
+            for fname, content in sorted(self.files.items()):
+                self._print(f"  {fname:<18} ({len(content)} bytes)\n", 15)
 
-        # Emulate kernel_main() execution
-        banner = "   VORTECORE OS -- 64-BIT NATIVE MICROKERNEL (x86_64)   "
-        col = (80 - len(banner)) // 2
-        row = 8
+        elif cmd.startswith("cat "):
+            fname = cmd[4:].strip()
+            if fname in self.files:
+                self._print(self.files[fname] + ("\n" if not self.files[fname].endswith("\n") else ""), 15)
+            else:
+                self._print(f"cat: file not found: {fname}\n", 12)
 
-        self._write_str(row - 1, col, "═" * len(banner), 9, 1)
-        self._write_str(row, col, banner, 15, 1)
-        self._write_str(row + 1, col, "═" * len(banner), 9, 1)
+        elif cmd.startswith("touch "):
+            fname = cmd[6:].strip()
+            if not fname:
+                self._print("touch: missing filename\n", 12)
+            elif fname in self.files:
+                self._print(f"touch: file already exists: {fname}\n", 14)
+            else:
+                self.files[fname] = ""
+                self._print(f"Created file: {fname}\n", 10)
 
-        self._write_str(11, 4, "[OK] 64-bit Long Mode & System V ABI Stack configured", 10, 0)
-        self._write_str(12, 4, "[OK] COM1 Serial UART Driver (0x3F8, 38400 baud) ready", 10, 0)
-        self._write_str(13, 4, "[OK] CPU Vendor: GenuineIntel / AuthenticAMD (x86_64)", 10, 0)
-        self._write_str(14, 4, "[OK] Kernel Stack Base: 0x0000000000090000 (16-byte aligned)", 7, 0)
-        self._write_str(15, 4, "[OK] Page Table Base  : 0x0000000000001000 (PML4 Active)", 7, 0)
+        elif cmd.startswith("rm "):
+            fname = cmd[3:].strip()
+            if fname in self.files:
+                del self.files[fname]
+                self._print(f"Deleted file: {fname}\n", 10)
+            else:
+                self._print(f"rm: file not found: {fname}\n", 12)
 
-        self._write_str(18, 4, "vortecore-x64# ", 10, 0)
-        self._write_str(18, 19, "kernel idle loop running. System ready for tasks.", 14, 0)
+        elif cmd == "clear":
+            self.terminal_clear()
 
-        self._write_str(23, 0, "Press Alt+F4 to exit 64-bit VM display.", 8, 0)
+        elif cmd == "sysinfo":
+            self._print("=== VORTECORE OS SYSTEM INFORMATION ===\n", 11)
+            self._print("Architecture : x86_64 Long Mode (64-Bit RIP/RSP)\n", 15)
+            self._print("Paging Model : 4-Level Paging (PML4, PDPT, PDT, PT)\n", 15)
+            self._print("File System  : RAMFS In-Memory Virtual File System\n", 15)
+            self._print("RAMFS Usage  : " + str(len(self.files)) + " / 16 Inodes\n", 15)
+            self._print("Console      : 80x25 VGA Color Framebuffer (0xB8000)\n", 15)
+
+        elif cmd == "reboot":
+            self._print("Rebooting VortecoreOS...\n", 14)
+            self.after(600, self._boot)
+            return
+
+        else:
+            self._print(f"Unknown command: '{cmd}'. Type 'help' for commands.\n", 12)
+
+    def _on_key(self, event):
+        if event.keysym == "Return":
+            self._print("\n")
+            self._execute_command(self.input_buffer)
+            self.input_buffer = ""
+            self._print_prompt()
+        elif event.keysym == "BackSpace":
+            if self.input_buffer:
+                self.input_buffer = self.input_buffer[:-1]
+                self._print("\b")
+        elif len(event.char) == 1 and 32 <= ord(event.char) <= 126:
+            self.input_buffer += event.char
+            self._print(event.char)
 
         self._render()
 
