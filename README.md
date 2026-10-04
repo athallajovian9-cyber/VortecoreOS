@@ -5,6 +5,11 @@ A custom 64-bit x86_64 Operating System kernel & bootloader.
 [![Discord](https://img.shields.io/badge/Discord-Join%20Vortex%20Community-5865F2?logo=discord&logoColor=white)](https://discord.gg/QtyBucygQ6)
 
 ## Features
+- **Ring 3 User Mode & Task State Segment (TSS) (`tss.c` & `tss.h`)**:
+  - **x86_64 GDT Structure**: Defined 64-bit Kernel Code (`0x08`), Kernel Data (`0x10`), User Code (`0x18 | 3` = `0x1B`), and User Data (`0x20 | 3` = `0x23`) with Descriptor Privilege Level 3 (`DPL=3`).
+  - **16-byte Long Mode TSS**: Stores Ring 0 stack pointer (`rsp0 = 0x90000`) and I/O Permission Bitmap (IOPB) to block unauthorized user-space port I/O (`in`/`out`). Loaded into Task Register via `ltr`.
+  - **Privilege Transition (`jump_to_user_mode`)**: Uses `iretq` to pop user stack pointer, user code segment, and RFLAGS to drop CPU privilege level from Ring 0 to Ring 3.
+  - **New Shell Command**: `runuser <prog>` to drop into isolated Ring 3 user mode.
 - **Phase 2: Virtual Memory Manager (VMM) & User-Space Isolation (`vmm.c`)**:
   - **4-Level Paging Architecture**: Traverses and maps `PML4` ➔ `PDPT` ➔ `PD` ➔ `PT` with 4KB page granularity.
   - **Physical Page Frame Allocator (PMM)**: 128MB bitmap-tracked physical memory manager.

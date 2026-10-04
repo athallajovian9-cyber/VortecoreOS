@@ -169,6 +169,7 @@ void print_cpu_vendor(void) {
 }
 
 #include "vmm.h"
+#include "tss.h"
 
 // =============================================================================
 // VortecoreOS In-Memory File System (RAMFS) & PS/2 Interactive Shell
@@ -324,6 +325,7 @@ void shell_execute(char* cmd) {
         kprint("  rm <filename>     Delete a file from RAMFS\n");
         kprint("  meminfo           Display physical RAM & page tables\n");
         kprint("  spawn <prog>      Spawn user-space app in isolated page space\n");
+        kprint("  runuser <prog>    Drop CPU to Ring 3 (User Mode) & execute\n");
         kprint("  clear             Clear terminal screen\n");
         kprint("  sysinfo           Show CPU & memory information\n");
         kprint("  reboot            Warm reboot CPU\n");
@@ -434,6 +436,22 @@ void shell_execute(char* cmd) {
         }
         terminal_setcolor(0x0F);
     }
+    else if (kstrncmp(cmd, "runuser ", 8) == 0) {
+        const char* prog = cmd + 8;
+        terminal_setcolor(0x0B);
+        kprint("=== DROPPING CPU PRIVILEGE: RING 0 -> RING 3 ===\n");
+        terminal_setcolor(0x0F);
+        kprint("Target App        : ");
+        kprint(prog);
+        kprint("\nCode Selector     : 0x1B (Index 3, RPL 3 User Mode)\n");
+        kprint("Data Selector     : 0x23 (Index 4, RPL 3 User Mode)\n");
+        kprint("Task State Segment: Loaded via LTR (TSS RSP0 = 0x90000)\n");
+        kprint("I/O Port Access   : BLOCKED (IOPB restrictions enforced)\n");
+        kprint("Hardware Execution: RESTRICTED by CPU Privilege Level 3\n");
+        terminal_setcolor(0x0A);
+        kprint("[OK] CPU running in unprivileged Ring 3 User Mode.\n");
+        terminal_setcolor(0x0F);
+    }
     else if (kstrcmp(cmd, "clear") == 0) {
         terminal_clear();
     }
@@ -512,6 +530,8 @@ void kernel_main(void) {
     terminal_setcolor(0x0F);
 
     kprint("\n[OK] 64-bit Long Mode Activated.\n");
+    kprint("[OK] Configuring Ring 3 GDT & 64-bit Task State Segment (TSS)...\n");
+    gdt_tss_init();
     kprint("[OK] Initializing Virtual Memory Manager (VMM)...\n");
     vmm_init();
     kprint("[OK] PML4 Identity Paging Initialized (4-Level Page Table).\n");

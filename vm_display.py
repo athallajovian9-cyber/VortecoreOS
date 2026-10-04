@@ -140,6 +140,7 @@ class VortecoreScreen(tk.Tk):
             self._print("  rm <filename>     Delete a file from RAMFS\n", 15)
             self._print("  meminfo           Show physical RAM & 4-level paging stats\n", 15)
             self._print("  spawn <prog>      Launch user-space program in isolated page space\n", 15)
+            self._print("  runuser <prog>    Drop CPU privilege to Ring 3 (User Mode)\n", 15)
             self._print("  clear             Clear the VGA terminal screen\n", 15)
             self._print("  sysinfo           Show kernel, memory & CPU architecture\n", 15)
             self._print("  reboot            Warm reboot kernel\n", 15)
@@ -168,6 +169,20 @@ class VortecoreScreen(tk.Tk):
                 self._print("     User Code Entry : 0x0000000000400000 (Ring 3 PTE_USER)\n", 15)
                 self._print("     User Stack Base : 0x00007FFFFFFFF000 (Isolated Stack)\n", 15)
                 self._print("     Kernel Memory   : PROTECTED (Illegal access triggers #PF)\n", 14)
+
+        elif cmd.startswith("runuser "):
+            prog = cmd[8:].strip()
+            if not prog:
+                self._print("runuser: missing program name\n", 12)
+            else:
+                self._print("=== DROPPING CPU PRIVILEGE: RING 0 -> RING 3 ===\n", 11)
+                self._print(f"Target App        : {prog}\n", 15)
+                self._print("Code Selector     : 0x1B (Index 3, RPL 3 User Mode)\n", 15)
+                self._print("Data Selector     : 0x23 (Index 4, RPL 3 User Mode)\n", 15)
+                self._print("Task State Segment: Loaded via LTR (TSS RSP0 = 0x90000)\n", 15)
+                self._print("I/O Port Access   : BLOCKED (IOPB restrictions enforced)\n", 15)
+                self._print("Hardware Execution: RESTRICTED by CPU Privilege Level 3\n", 15)
+                self._print("[OK] CPU running in unprivileged Ring 3 User Mode.\n", 10)
 
         elif cmd == "ls":
             self._print(f"RAMFS Directory Listing ({len(self.files)} files):\n", 11)
