@@ -1,0 +1,14 @@
+[package]
+name = "vortecore_kernel"
+version = "1.0.0"
+edition = "2021"
+authors = ["Athalla Jovian <athallajovian9-cyber>"]
+description = "VortecoreOS 64-bit microkernel with capability security, lock-free IPC, and RTOS determinism written in pure #![no_std] Rust."
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"
+lto = true
+opt-level = 3
