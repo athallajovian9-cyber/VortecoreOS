@@ -9,8 +9,8 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 
-echo Building VortecoreOS boot image...
-python "%~dp0build_boot.py"
+echo Building VortecoreOS 64-bit boot image...
+python "%~dp0build_boot64.py"
 
 echo.
 echo Launching VortecoreOS VM Display...

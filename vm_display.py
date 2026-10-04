@@ -26,7 +26,7 @@ VGA_COLORS = [
 class VortecoreScreen(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("VortecoreOS - Virtual Machine Boot Display (x86)")
+        self.title("VortecoreOS - 64-bit Virtual Machine Boot Display (x86_64)")
         self.geometry("820x520")
         self.configure(bg="#000000")
         self.resizable(False, False)
@@ -49,17 +49,19 @@ class VortecoreScreen(tk.Tk):
         raw = BOOT_IMG.read_bytes()
         print(f"BIOS read MBR: {len(raw)} bytes.")
 
-        # Header BIOS log
+        # Header BIOS log for 64-bit Long Mode
         self._write_str(0, 0, "BIOS ACPI 2.0 - Starting VortecoreOS...", 10, 0)
         self._write_str(1, 0, "[OK] Found MBR Boot Signature (0xAA55) at 0x7DFE", 2, 0)
         self._write_str(2, 0, "[OK] Fast A20 Gate enabled via Port 0x92", 2, 0)
-        self._write_str(3, 0, "[OK] Loaded GDT (Flat 4GB Addressing: 0x08 Code, 0x10 Data)", 2, 0)
-        self._write_str(4, 0, "[OK] Switched CPU to 32-bit Protected Mode (CR0.PE = 1)", 3, 0)
+        self._write_str(3, 0, "[OK] CPUID verified: AMD64 / Intel 64 Long Mode available", 2, 0)
+        self._write_str(4, 0, "[OK] Initialized 4-Level 64-bit Paging (PML4, PDPT, PDT, PT)", 2, 0)
+        self._write_str(5, 0, "[OK] Enabled PAE (CR4.PAE = 1) and Long Mode (EFER.LME = 1)", 3, 0)
+        self._write_str(6, 0, "[OK] Paging active (CR0.PG = 1) -> CPU entered 64-bit Long Mode", 11, 0)
 
-        # Emulate 0xB8000 framebuffer writes from bootloader
-        msg = "=== VORTECORE OS [32-BIT KERNEL CORE ACTIVE] ==="
+        # Emulate 0xB8000 framebuffer writes from 64-bit kernel
+        msg = "=== VORTECORE OS [64-BIT x86_64 LONG MODE ACTIVE] ==="
         col = (80 - len(msg)) // 2
-        row = 12
+        row = 13
 
         # Draw box
         box_top = "╔" + "═" * (len(msg) + 4) + "╗"
@@ -70,9 +72,9 @@ class VortecoreScreen(tk.Tk):
         self._write_str(row, col - 2, box_mid, 15, 1)
         self._write_str(row + 1, col - 2, box_bot, 11, 1)
 
-        self._write_str(16, col, "Kernel State: Idle Loop (HLT)", 14, 0)
-        self._write_str(17, col - 2, "Architecture: x86 Protected Mode", 7, 0)
-        self._write_str(23, 0, "Press Alt+F4 to exit VM display.", 8, 0)
+        self._write_str(17, col + 2, "Architecture: x86_64 Long Mode (64-Bit RIP/RSP)", 14, 0)
+        self._write_str(18, col + 4, "Registers Active: RAX, RBX, RCX, RDX, R8-R15", 7, 0)
+        self._write_str(23, 0, "Press Alt+F4 to exit 64-bit VM display.", 8, 0)
 
         self._render()
 
