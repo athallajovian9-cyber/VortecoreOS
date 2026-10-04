@@ -178,6 +178,7 @@ void print_cpu_vendor(void) {
 #include "installer.h"
 #include "gui.h"
 #include "subsystems.h"
+#include "customizer.h"
 
 // =============================================================================
 // VortecoreOS In-Memory File System (RAMFS) & PS/2 Interactive Shell
@@ -336,6 +337,9 @@ void shell_execute(char* cmd) {
         kprint("  ipctest           Test Lock-Free Ring Buffer IPC\n");
         kprint("  rtostest          Test Deterministic Hard Real-Time Scheduler\n");
         kprint("  profile <mode>    Switch OS profile (gaming, dev, rtos, hardened, balanced)\n");
+        kprint("  theme <name>      Customize desktop theme (cyberpunk, matrix, nord, solarized, obsidian)\n");
+        kprint("  setuser <name>    Set personalized OS username & ownership\n");
+        kprint("  setprompt <str>   Customize interactive shell prompt\n");
         kprint("  moglinux          Display Linux comparison & microkernel benchmarks\n");
         kprint("  startx / desktop  Launch VESA High-Resolution Graphical Desktop UI\n");
         kprint("  install           Run Linux-style OS installer wizard on /dev/sda\n");
@@ -633,6 +637,31 @@ void shell_execute(char* cmd) {
             kprint("  • General desktop computing, RAMFS filesystem, and multitasking\n");
         }
     }
+    else if (kstrncmp(cmd, "theme ", 6) == 0) {
+        const char* tname = cmd + 6;
+        set_theme_preset(tname);
+        terminal_setcolor(0x0A);
+        kprint("[CUSTOMIZER] Active theme switched to '");
+        kprint(tname);
+        kprint("'. Type 'startx' to view desktop palette.\n");
+        terminal_setcolor(0x0F);
+    }
+    else if (kstrncmp(cmd, "setuser ", 8) == 0) {
+        const char* uname = cmd + 8;
+        set_custom_identity(uname, "vortecore-rig");
+        terminal_setcolor(0x0A);
+        kprint("[CUSTOMIZER] OS Ownership registered to: ");
+        kprint(uname);
+        kprint("@vortecore-rig\n");
+        terminal_setcolor(0x0F);
+    }
+    else if (kstrncmp(cmd, "setprompt ", 10) == 0) {
+        const char* pstr = cmd + 10;
+        set_custom_prompt(pstr);
+        terminal_setcolor(0x0A);
+        kprint("[CUSTOMIZER] Shell prompt customized.\n");
+        terminal_setcolor(0x0F);
+    }
     else if (kstrcmp(cmd, "moglinux") == 0) {
         terminal_setcolor(0x1F); // White on Blue
         kprint("                  VORTECORE OS  vs.  MONOLITHIC LINUX                   \n");
@@ -745,6 +774,8 @@ void kernel_main(void) {
     subsystems_init();
     kprint("[OK] Initializing Capability Security Subsystem (Zero-Ambient Authority)...\n");
     cap_init();
+    kprint("[OK] Loading User Customization & Identity Engine...\n");
+    customizer_init();
     kprint("[OK] Initializing Lock-Free Ring Buffer IPC Channels...\n");
     ipc_init();
     kprint("[OK] Initializing Hard Real-Time Deterministic Scheduler (O(1) RTOS)...\n");

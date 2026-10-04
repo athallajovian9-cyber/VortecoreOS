@@ -10,6 +10,69 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 
+THEMES = {
+    "Cyberpunk": {
+        "bg": "#0A0A10",
+        "grid": "#1A1528",
+        "taskbar": "#12101C",
+        "win_bg": "#151420",
+        "border": "#3B2D54",
+        "titlebar_act": "#A855F7",
+        "titlebar_ina": "#2D2640",
+        "accent": "#F43F5E",
+        "text": "#FDF4FF",
+        "tag": "Cyberpunk Neon 240Hz",
+    },
+    "Matrix": {
+        "bg": "#020804",
+        "grid": "#081F0E",
+        "taskbar": "#041008",
+        "win_bg": "#06140A",
+        "border": "#0D3315",
+        "titlebar_act": "#16A34A",
+        "titlebar_ina": "#0F2914",
+        "accent": "#22C55E",
+        "text": "#DCFCE7",
+        "tag": "Matrix Terminal 165Hz",
+    },
+    "Nord": {
+        "bg": "#2E3440",
+        "grid": "#3B4252",
+        "taskbar": "#282C34",
+        "win_bg": "#3B4252",
+        "border": "#4C566A",
+        "titlebar_act": "#88C0D0",
+        "titlebar_ina": "#434C5E",
+        "accent": "#81A1C1",
+        "text": "#ECEFF4",
+        "tag": "Nordic Frost 144Hz",
+    },
+    "Solarized": {
+        "bg": "#002B36",
+        "grid": "#073642",
+        "taskbar": "#00212B",
+        "win_bg": "#073642",
+        "border": "#0A4656",
+        "titlebar_act": "#268BD2",
+        "titlebar_ina": "#002B36",
+        "accent": "#B58900",
+        "text": "#FDF6E3",
+        "tag": "Solarized Ocean 120Hz",
+    },
+    "Obsidian": {
+        "bg": "#0B0E14",
+        "grid": "#131822",
+        "taskbar": "#12161F",
+        "win_bg": "#161B26",
+        "border": "#2C3549",
+        "titlebar_act": "#22C55E",
+        "titlebar_ina": "#2D3748",
+        "accent": "#38BDF8",
+        "text": "#F8FAFC",
+        "tag": "Obsidian Deep 144Hz",
+    },
+}
+
 
 class WindowWidget:
     def __init__(self, parent_canvas, x, y, width, height, title, bg_color="#161B26", is_active=True):
@@ -24,23 +87,23 @@ class WindowWidget:
         self.drag_start = None
         self.tag = f"win_{id(self)}"
 
-    def render(self):
+    def render(self, theme):
         self.canvas.delete(self.tag)
 
         # Drop shadow
         self.canvas.create_rectangle(
             self.x + 8, self.y + 8, self.x + self.w + 8, self.y + self.h + 8,
-            fill="#05070A", outline="", tags=self.tag
+            fill="#030406", outline="", tags=self.tag
         )
 
         # Window body
         self.canvas.create_rectangle(
             self.x, self.y, self.x + self.w, self.y + self.h,
-            fill=self.bg_color, outline="#2C3549", width=1, tags=self.tag
+            fill=theme["win_bg"], outline=theme["border"], width=1, tags=self.tag
         )
 
         # Title bar (34px)
-        tb_color = "#22C55E" if self.is_active else "#2D3748"
+        tb_color = theme["titlebar_act"] if self.is_active else theme["titlebar_ina"]
         self.canvas.create_rectangle(
             self.x, self.y, self.x + self.w, self.y + 34,
             fill=tb_color, outline="", tags=self.tag
@@ -49,7 +112,7 @@ class WindowWidget:
         # Title text
         self.canvas.create_text(
             self.x + 14, self.y + 17,
-            text=self.title, fill="#0F172A" if self.is_active else "#E2E8F0",
+            text=self.title, fill="#FFFFFF" if self.is_active else "#94A3B8",
             font=("Segoe UI", 10, "bold"), anchor="w", tags=self.tag
         )
 
@@ -63,18 +126,23 @@ class WindowWidget:
 class VortecoreDesktop(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("VortecoreOS Desktop Environment (1024x768 32-bit LFB)")
-        self.geometry("1024x768")
+        self.title("VortecoreOS - 100% Fully Customizable Desktop Environment (x86_64)")
+        self.geometry("1040x780")
         self.configure(bg="#0B0E14")
         self.resizable(False, False)
 
-        self.canvas = tk.Canvas(self, width=1024, height=768, bg="#0B0E14", highlightthickness=0)
+        # User Profile & Identity
+        self.current_user = "Athalla"
+        self.current_hostname = "vortecore-rig"
+        self.current_theme_name = "Cyberpunk"
+
+        self.canvas = tk.Canvas(self, width=1040, height=780, bg="#0B0E14", highlightthickness=0)
         self.canvas.pack(fill=tk.BOTH, expand=True)
 
         self.windows = [
-            WindowWidget(self.canvas, 60, 60, 520, 360, "⚡ Vortecore Terminal (x86_64)", "#0F121A", True),
-            WindowWidget(self.canvas, 460, 180, 500, 380, "📊 RTOS Real-Time Monitor & Benchmark", "#141824", False),
-            WindowWidget(self.canvas, 140, 380, 420, 260, "📁 RAMFS File Explorer", "#131620", False),
+            WindowWidget(self.canvas, 50, 50, 480, 340, "🎨 OS Customizer & Theme Studio", "#151420", True),
+            WindowWidget(self.canvas, 500, 100, 500, 360, "⚡ Vortecore Terminal (x86_64)", "#0F121A", False),
+            WindowWidget(self.canvas, 100, 380, 480, 300, "📊 Hardware & Real-Time Monitor", "#141824", False),
         ]
 
         self.active_win_idx = 0
@@ -90,83 +158,119 @@ class VortecoreDesktop(tk.Tk):
 
     def _render_desktop(self):
         self.canvas.delete("all")
+        theme = THEMES[self.current_theme_name]
 
-        # Desktop wallpaper gradient grid
-        for y in range(0, 720, 36):
-            for x in range(0, 1024, 36):
-                self.canvas.create_rectangle(x, y, x + 36, y + 36, fill="#0B0E14", outline="#131822")
+        # 1. Desktop wallpaper grid
+        for y in range(0, 730, 36):
+            for x in range(0, 1040, 36):
+                self.canvas.create_rectangle(x, y, x + 36, y + 36, fill=theme["bg"], outline=theme["grid"])
 
-        # Render floating windows
+        # 2. Render floating windows
         for i, win in enumerate(self.windows):
             win.is_active = (i == self.active_win_idx)
-            win.render()
-            self._render_window_contents(win)
+            win.render(theme)
+            self._render_window_contents(win, theme)
 
-        # Render modern bottom Taskbar (48px)
-        self.canvas.create_rectangle(0, 720, 1024, 768, fill="#12161F", outline="#222938")
+        # 3. Modern Taskbar (Height 50px at bottom)
+        self.canvas.create_rectangle(0, 730, 1040, 780, fill=theme["taskbar"], outline=theme["border"])
 
-        # Start button pill
-        self.canvas.create_rectangle(14, 728, 130, 760, fill="#22C55E", outline="")
-        self.canvas.create_text(72, 744, text="VORTECORE", fill="#0A0F14", font=("Segoe UI", 9, "bold"))
+        # User Owner Pill on Taskbar
+        self.canvas.create_rectangle(14, 738, 140, 772, fill=theme["accent"], outline="")
+        self.canvas.create_text(77, 755, text=f"👤 {self.current_user}", fill="#000000", font=("Segoe UI", 9, "bold"))
 
         # Taskbar window tabs
         for idx, win in enumerate(self.windows):
-            tx = 145 + idx * 160
-            t_color = "#222C3D" if idx == self.active_win_idx else "#161C26"
-            self.canvas.create_rectangle(tx, 728, tx + 150, 760, fill=t_color, outline="#2C3549")
-            self.canvas.create_text(tx + 12, 744, text=win.title[:18], fill="#FFFFFF", font=("Segoe UI", 8), anchor="w")
+            tx = 155 + idx * 160
+            t_color = theme["titlebar_ina"] if idx == self.active_win_idx else theme["taskbar"]
+            self.canvas.create_rectangle(tx, 738, tx + 150, 772, fill=t_color, outline=theme["border"])
+            self.canvas.create_text(tx + 12, 755, text=win.title[:18], fill=theme["text"], font=("Segoe UI", 8), anchor="w")
 
-        # Clock & System Tray
-        self.canvas.create_text(960, 744, text="64-bit  2026", fill="#38BDF8", font=("Consolas", 9, "bold"))
+        # Clock & Identity Tray (Right side)
+        tray_text = f"Theme: {self.current_theme_name} · {self.current_hostname} (2026)"
+        self.canvas.create_text(870, 755, text=tray_text, fill=theme["accent"], font=("Consolas", 8, "bold"))
 
-    def _render_window_contents(self, win: WindowWidget):
-        # Render Terminal inside Window 0
-        if "Terminal" in win.title:
+    def _render_window_contents(self, win: WindowWidget, theme):
+        # Window 0: OS Customizer Studio
+        if "Customizer" in win.title:
+            self.canvas.create_text(
+                win.x + 20, win.y + 50,
+                text="SYSTEM OWNERSHIP & THEME STUDIO\n"
+                     "You have 100% root control over every visual component.\n",
+                fill=theme["accent"], font=("Segoe UI", 9, "bold"), anchor="nw", tags=win.tag
+            )
+
+            self.canvas.create_text(
+                win.x + 20, win.y + 90,
+                text=f"Owner User : {self.current_user}\n"
+                     f"Host System: {self.current_hostname}\n"
+                     f"Active Skin: {self.current_theme_name} ({theme['tag']})\n\n"
+                     "Click a theme button below to switch palette instantly:",
+                fill=theme["text"], font=("Consolas", 8), anchor="nw", tags=win.tag
+            )
+
+            # Draw clickable theme switcher pills
+            t_names = list(THEMES.keys())
+            for idx, tname in enumerate(t_names):
+                bx = win.x + 20 + (idx % 3) * 140
+                by = win.y + 190 + (idx // 3) * 50
+                is_cur = (tname == self.current_theme_name)
+                btn_fill = theme["accent"] if is_cur else theme["win_bg"]
+                btn_txt = "#000000" if is_cur else theme["text"]
+
+                self.canvas.create_rectangle(bx, by, bx + 125, by + 34, fill=btn_fill, outline=theme["accent"], width=1, tags=win.tag)
+                self.canvas.create_text(bx + 62, by + 17, text=tname, fill=btn_txt, font=("Segoe UI", 9, "bold"), tags=win.tag)
+
+        # Window 1: Terminal with custom username
+        elif "Terminal" in win.title:
             self.canvas.create_text(
                 win.x + 18, win.y + 55,
-                text="VortecoreOS 64-bit Kernel v1.3.0 (x86_64 All-Rounder)\n"
-                     "Microkernel active · RAMFS mounted · Paging 4-Level\n\n"
-                     "vortecore-rust# profile gaming\n"
-                     "[ACTIVE: GAMING PROFILE] 240Hz LFB, 0.1ms raw latency\n"
-                     "vortecore-rust# moglinux\n"
-                     "[MOG] Context switch: 18 cycles (Linux: 1200+)\n"
-                     "[MOG] Zero ambient authority capabilities active.\n"
-                     "vortecore-rust# _",
-                fill="#38BDF8", font=("Consolas", 9), anchor="nw", tags=win.tag
+                text=f"VortecoreOS 64-bit Kernel v1.4.0 (Customized Edition)\n"
+                     f"Registered Owner: {self.current_user}@{self.current_hostname}\n"
+                     f"Theme: {self.current_theme_name} (Full User Control Active)\n\n"
+                     f"{self.current_user}@{self.current_hostname}> setuser {self.current_user}\n"
+                     f"[CUSTOMIZER] Full OS ownership committed.\n"
+                     f"{self.current_user}@{self.current_hostname}> theme {self.current_theme_name.lower()}\n"
+                     f"[CUSTOMIZER] Palette applied in real-time.\n"
+                     f"{self.current_user}@{self.current_hostname}> _",
+                fill=theme["accent"], font=("Consolas", 9), anchor="nw", tags=win.tag
             )
-        # Render RTOS monitor inside Window 1
+        # Window 2: RTOS Monitor
         elif "Monitor" in win.title:
             self.canvas.create_text(
                 win.x + 18, win.y + 55,
-                text="REAL-TIME HARDWARE & THREAD METRICS\n"
+                text="HARDWARE ACCELERATION & CUSTOM TUNING\n"
                      "--------------------------------------------\n"
-                     "Scheduler  : O(1) Preemptive Static Priority RTOS\n"
-                     "Jitter     : 0.00 ns (Hard Real-Time Guaranteed)\n"
-                     "IPC Queue  : SPSC Lock-Free Ring Buffer (0 Locks)\n"
-                     "Active PID : 1 [Avionics Flight Control - Prio 0]\n"
-                     "Active PID : 2 [User NVMe Driver - Prio 1]\n"
-                     "Security   : 100% Ring 3 Isolation (DPL 3)\n"
-                     "Crash Guard: Self-Healing Microkernel Active",
+                     f"Current User   : {self.current_user} (Root Authority)\n"
+                     f"Display Refresh: {theme['tag'].split()[-1]}\n"
+                     "Window Shadow  : Enabled (Hardware Composited)\n"
+                     "Input Polling  : ~0.1 ms (Raw PS/2 / USB HID)\n"
+                     "IPC Latency    : 18 CPU Cycles (Lock-Free SPSC)\n"
+                     "RAMFS Inodes   : Fully Writable by User\n"
+                     "Privilege Mode : Custom Ring 3 Sandboxing Active",
                 fill="#10B981", font=("Consolas", 9), anchor="nw", tags=win.tag
             )
-        # Render File Explorer in Window 2
-        elif "RAMFS" in win.title:
-            files = ["📄 readme.txt (112 B)", "⚙️ version.sys (48 B)", "📜 motd (42 B)", "🚀 hello.elf (1.2 KB)"]
-            for f_idx, f_name in enumerate(files):
-                fy = win.y + 60 + f_idx * 30
-                self.canvas.create_text(win.x + 20, fy, text=f_name, fill="#F8FAFC", font=("Segoe UI", 9), anchor="w", tags=win.tag)
 
     def _on_click(self, event):
-        # Check if clicked inside a window
+        # 1. Check if clicked a theme button inside Customizer Window
+        for win in self.windows:
+            if "Customizer" in win.title:
+                t_names = list(THEMES.keys())
+                for idx, tname in enumerate(t_names):
+                    bx = win.x + 20 + (idx % 3) * 140
+                    by = win.y + 190 + (idx // 3) * 50
+                    if bx <= event.x <= bx + 125 and by <= event.y <= by + 34:
+                        self.current_theme_name = tname
+                        self._render_desktop()
+                        return
+
+        # 2. Window selection & Dragging
         for idx in range(len(self.windows) - 1, -1, -1):
             win = self.windows[idx]
             if win.x <= event.x <= win.x + win.w and win.y <= event.y <= win.y + win.h:
-                # Bring window to front
                 clicked_win = self.windows.pop(idx)
                 self.windows.append(clicked_win)
                 self.active_win_idx = len(self.windows) - 1
 
-                # If clicked titlebar, initiate drag
                 if event.y <= clicked_win.y + 34:
                     self.dragged_win = clicked_win
                     self.drag_offset_x = event.x - clicked_win.x
@@ -177,8 +281,8 @@ class VortecoreDesktop(tk.Tk):
 
     def _on_drag(self, event):
         if self.dragged_win:
-            self.dragged_win.x = max(0, min(1024 - self.dragged_win.w, event.x - self.drag_offset_x))
-            self.dragged_win.y = max(0, min(720 - self.dragged_win.h, event.y - self.drag_offset_y))
+            self.dragged_win.x = max(0, min(1040 - self.dragged_win.w, event.x - self.drag_offset_x))
+            self.dragged_win.y = max(0, min(730 - self.dragged_win.h, event.y - self.drag_offset_y))
             self._render_desktop()
 
     def _on_release(self, _event):

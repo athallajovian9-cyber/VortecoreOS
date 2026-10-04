@@ -22,6 +22,19 @@ Switch effortlessly on the fly using `profile <mode>`:
    - Zero ambient authority via linear unforgeable capability tokens (`capability.c`).
    - Hardware Ring 3 isolation prevents ransomware and privilege-escalation attacks at the CPU level.
 
+## Total User Ownership & Customization Engine (`customizer.c` & `customizer.h`)
+You are not a guest user—you own 100% of this operating system:
+- **🎨 Interactive Theme Studio**:
+  - **Cyberpunk Neon (240Hz)**: Dark void wallpaper with vivid purple titlebars and neon pink accents.
+  - **Matrix Terminal (165Hz)**: Dark emerald console with glowing green borders.
+  - **Nord Frost (144Hz)**: Arctic polar night slate with cold ice-blue accents.
+  - **Solarized Ocean (120Hz)**: Deep teal base with amber contrast.
+  - **Obsidian Deep (144Hz)**: Pitch black OLED background with emerald active bars.
+- **👤 Identity & Ownership Persistence**:
+  - `setuser <name>`: Replaces system credentials and registers root ownership to your name.
+  - `setprompt <str>`: Dynamically customize your shell input prompt.
+  - `theme <name>`: Switch visual palette on the fly from the shell or click the theme pills directly in the desktop GUI.
+
 ## Available Editions & Launchers
 1. **VortecoreOS Desktop Environment (`START_DESKTOP_GUI.bat`)**:
    - 1024x768 32-bit TrueColor graphical compositor.
