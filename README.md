@@ -6,12 +6,15 @@ A 64-bit x86_64 Microkernel written in pure `#![no_std]` Rust with Capability Se
 [![Discord](https://img.shields.io/badge/Discord-Join%20Vortex%20Community-5865F2?logo=discord&logoColor=white)](https://discord.gg/QtyBucygQ6)
 [![GitHub release](https://img.shields.io/github/v/release/athallajovian9-cyber/VortecoreOS?color=10B981)](https://github.com/athallajovian9-cyber/VortecoreOS/releases)
 
-## Available Editions
-1. **VortecoreOS v1.1.0 (Full OS Installer Edition)**:
+## Available Editions & Launchers
+1. **VortecoreOS Desktop Environment (`START_DESKTOP_GUI.bat`)**:
+   - 1024x768 32-bit TrueColor graphical compositor.
+   - Interactive draggable floating windows, modern dark taskbar, built-in Terminal, RTOS Monitor, and RAMFS File Explorer.
+2. **VortecoreOS v1.2.0 (Full OS Installer Edition)**:
    - Includes real MBR partitioner, ATA disk driver, and Linux-style installer wizard (`installer.c`).
    - Run `install` inside the shell to partition and install onto `/dev/sda` or a real drive.
-   - [Download VortecoreOS-Installer-x64-v1.1.0.zip](https://github.com/athallajovian9-cyber/VortecoreOS/releases/tag/v1.1.0)
-2. **VortecoreOS v1.0.0 (Live Rust Microkernel Core Edition)**:
+   - [Download VortecoreOS-Desktop-x64-v1.2.0.zip](https://github.com/athallajovian9-cyber/VortecoreOS/releases/tag/v1.2.0)
+3. **VortecoreOS v1.0.0 (Live Rust Microkernel Core Edition)**:
    - Instant live RAM mode, 100% in-memory with zero disk footprint.
    - [Download VortecoreOS-Rust-v1.0.0.zip](https://github.com/athallajovian9-cyber/VortecoreOS/releases/tag/v1.0.0)
 
@@ -35,6 +38,12 @@ cargo build --release --target x86_64-unknown-none
 ```
 
 ## Features
+- **Graphical Desktop Environment & Compositor (`gui.c`, `gui.h`, `desktop_gui.py`)**:
+  - High-resolution 1024x768 32-bit TrueColor Linear Framebuffer (LFB) compositor.
+  - Interactive movable floating windows with drop shadows and titlebars.
+  - Modern bottom taskbar with app launcher pill, active window tabs, and system status clock.
+  - Preloaded desktop applications: Vortecore Terminal, RTOS Monitor, and RAMFS File Explorer.
+  - Launch with `START_DESKTOP_GUI.bat` or type `startx` / `desktop` inside the shell.
 - **Strategy 1: The Microkernel Archetype (Total Isolation & Lock-Free IPC - `ipc.c` & `ipc.h`)**:
   - **Clean Microkernel Design**: Unlike Linux's monolithic 35M+ lines running in Ring 0, drivers and subsystems live in isolated User-Space (Ring 3). A crashing driver is reaped and restarted with zero system panic or dropped sessions.
   - **Lock-Free SPSC Ring Buffers**: High-throughput message passing (`ipc_send()` / `ipc_recv()`) executing in ~18 CPU cycles without spinlock or mutex contention.

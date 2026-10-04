@@ -176,6 +176,7 @@ void print_cpu_vendor(void) {
 #include "ipc.h"
 #include "sched.h"
 #include "installer.h"
+#include "gui.h"
 
 // =============================================================================
 // VortecoreOS In-Memory File System (RAMFS) & PS/2 Interactive Shell
@@ -334,6 +335,7 @@ void shell_execute(char* cmd) {
         kprint("  ipctest           Test Lock-Free Ring Buffer IPC\n");
         kprint("  rtostest          Test Deterministic Hard Real-Time Scheduler\n");
         kprint("  moglinux          Display Linux comparison & microkernel benchmarks\n");
+        kprint("  startx / desktop  Launch VESA High-Resolution Graphical Desktop UI\n");
         kprint("  install           Run Linux-style OS installer wizard on /dev/sda\n");
         kprint("  meminfo           Display physical RAM & page tables\n");
         kprint("  spawn <prog>      Spawn user-space app in isolated page space\n");
@@ -611,6 +613,16 @@ void shell_execute(char* cmd) {
     }
     else if (kstrcmp(cmd, "install") == 0) {
         installer_run();
+    }
+    else if (kstrcmp(cmd, "startx") == 0 || kstrcmp(cmd, "desktop") == 0) {
+        terminal_setcolor(0x0E);
+        kprint("[VESA VBE] Switching display adapter to 1024x768x32bpp Linear Framebuffer...\n");
+        kprint("[COMPOSITOR] Starting Vortecore Graphical Window Manager & Desktop Environment...\n");
+        gui_init();
+        gui_render_frame();
+        terminal_setcolor(0x0A);
+        kprint("[OK] Desktop Compositor active. Graphical mode engaged.\n");
+        terminal_setcolor(0x0F);
     }
     else if (kstrcmp(cmd, "clear") == 0) {
         terminal_clear();
