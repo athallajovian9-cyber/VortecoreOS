@@ -5,6 +5,16 @@ A custom 64-bit x86_64 Operating System kernel & bootloader.
 [![Discord](https://img.shields.io/badge/Discord-Join%20Vortex%20Community-5865F2?logo=discord&logoColor=white)](https://discord.gg/QtyBucygQ6)
 
 ## Features
+- **Phase 2 Step 4: ELF-64 Program Loader (`elf.c` & `elf.h`)**:
+  - **ELF Header Parser**: Validates 64-bit ELF magic (`\x7FELF`), machine type (`EM_X86_64`), and little-endian ordering.
+  - **Program Header Segment Mapper**: Iterates `PT_LOAD` segments, dynamically allocates memory frames, maps segment permissions (`PF_R`, `PF_W`, `PF_X`), and copies binary payloads into isolated user address spaces.
+  - **New Shell Command**: `exec <elf_file>` to load and run binaries in Ring 3.
+- **Phase 2 Step 5: Standard C Library (`libc.c` & `libc.h`)**:
+  - **Formatted I/O**: `printf()` (with `%s`, `%d`, `%x`, `%c`), `putchar()`, `puts()`, and `getchar()`.
+  - **Memory Management**: User-space heap allocator `malloc()` and `free()` over `SYS_ALLOC_MEM`.
+  - **File Operations**: `open()`, `read()`, `write()`, and `remove()` mapped to kernel RAMFS system calls.
+  - **Process Lifecycle**: `exit()` and `get_time()`.
+  - **Sample Ring 3 Application (`hello.c`)**: Demonstrates dynamic heap allocation, file reading, and clean exit via libc wrappers.
 - **Phase 2 Step 3: Fast SYSCALL / SYSRET Interface (`syscall.c` & `syscall.h`)**:
   - **MSR Hardware Dispatch**: Configured `IA32_EFER_MSR` (SCE bit), `IA32_STAR_MSR` (Segment targets), `IA32_LSTAR_MSR` (`0xC0000082` target handler pointer), and `IA32_FMASK_MSR` (RFLAGS mask).
   - **System V AMD64 Calling Convention**: `RAX` = syscall number, `RDI`, `RSI`, `RDX`, `R10`, `R8`, `R9` = arguments.

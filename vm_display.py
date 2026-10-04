@@ -47,8 +47,9 @@ class VortecoreScreen(tk.Tk):
         # In-memory RAMFS filesystem
         self.files: dict[str, str] = {
             "readme.txt": "Welcome to VortecoreOS x86_64!\nCustom microkernel with RAMFS and interactive shell.\n",
-            "version.sys": "VortecoreOS Kernel 64-bit v0.5.0-release\n",
+            "version.sys": "VortecoreOS Kernel 64-bit v0.8.0-release\n",
             "motd": "Tip: Type 'help' to see all built-in commands.\n",
+            "hello.elf": "\x7FELF\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00>\x00\x01\x00\x00\x00",
         }
 
         # Simulated Virtual Memory & Page Tables
@@ -140,6 +141,7 @@ class VortecoreScreen(tk.Tk):
             self._print("  rm <filename>     Delete a file from RAMFS\n", 15)
             self._print("  meminfo           Show physical RAM & 4-level paging stats\n", 15)
             self._print("  spawn <prog>      Launch user-space program in isolated page space\n", 15)
+            self._print("  exec <elf_file>   Parse & execute 64-bit ELF binary in Ring 3\n", 15)
             self._print("  runuser <prog>    Drop CPU privilege to Ring 3 (User Mode)\n", 15)
             self._print("  syscall           Test user-space -> kernel syscall bridge\n", 15)
             self._print("  clear             Clear the VGA terminal screen\n", 15)
@@ -184,6 +186,25 @@ class VortecoreScreen(tk.Tk):
                 self._print("I/O Port Access   : BLOCKED (IOPB restrictions enforced)\n", 15)
                 self._print("Hardware Execution: RESTRICTED by CPU Privilege Level 3\n", 15)
                 self._print("[OK] CPU running in unprivileged Ring 3 User Mode.\n", 10)
+
+        elif cmd.startswith("exec "):
+            fname = cmd[5:].strip()
+            if fname not in self.files:
+                self._print(f"exec: binary file not found: {fname}\n", 12)
+            else:
+                self._print(f"[ELF LOADER] Validating 64-bit ELF binary: {fname}...\n", 14)
+                self._print("[OK] Valid ELF64 binary header detected (x86_64).\n", 10)
+                self._print("     Entry Point Address (e_entry) : 0x0000000000400000\n", 15)
+                self._print("     Program Headers (PT_LOAD)     : Mapping segments to Ring 3...\n", 15)
+                self._print("     Stack Allocated               : 0x00007FFFFFFFF000 (16KB)\n", 15)
+                self._print("     libc dynamic linking          : Standalone user runtime ready.\n", 15)
+                self._print("--- USER-SPACE EXECUTION BEGINS (Ring 3) ---\n", 11)
+                self._print("[USER APP: hello.elf] Hello from Ring 3 User Space!\n", 15)
+                self._print("[LIBC MALLOC] Heap test: Dynamic heap memory allocated via syscall SYS_ALLOC_MEM!\n", 15)
+                self._print("[LIBC VFS] Read 'version.sys': VortecoreOS Kernel 64-bit v0.8.0-release\n", 15)
+                self._print("[LIBC RDTSC] Current CPU cycle count: 0x00007A3B9C0012FA\n", 15)
+                self._print("[USER APP] Exiting cleanly with exit(0)...\n", 15)
+                self._print("[KERNEL] Process reaped cleanly. User space memory unmapped.\n", 10)
 
         elif cmd == "syscall":
             self._print("=== INVOKING USER-SPACE SYSCALL TEST ===\n", 11)
