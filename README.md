@@ -5,6 +5,12 @@ A custom 64-bit x86_64 Operating System kernel & bootloader.
 [![Discord](https://img.shields.io/badge/Discord-Join%20Vortex%20Community-5865F2?logo=discord&logoColor=white)](https://discord.gg/QtyBucygQ6)
 
 ## Features
+- **Phase 2: Virtual Memory Manager (VMM) & User-Space Isolation (`vmm.c`)**:
+  - **4-Level Paging Architecture**: Traverses and maps `PML4` ➔ `PDPT` ➔ `PD` ➔ `PT` with 4KB page granularity.
+  - **Physical Page Frame Allocator (PMM)**: 128MB bitmap-tracked physical memory manager.
+  - **User-Space Memory Isolation**: `vmm_create_user_space()` generates dedicated, isolated PML4 address spaces per application.
+  - **Hardware Ring Protection**: User pages mapped with `PTE_USER` (Ring 3), while kernel pages stay strictly Ring 0 supervisor. Any user crash or out-of-bounds pointer triggers a Page Fault (`#PF`) without crashing the core kernel.
+  - **New Shell Commands**: `meminfo` (display paging and memory usage) and `spawn <prog>` (create isolated address space).
 - **64-bit Long Mode MBR Bootloader (`boot64.asm`)**: Transitions cleanly:
   `16-bit Real Mode` ➔ `32-bit Protected Mode` ➔ `64-bit Long Mode`.
 - **Interactive 64-bit Shell**:

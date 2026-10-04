@@ -47,9 +47,13 @@ class VortecoreScreen(tk.Tk):
         # In-memory RAMFS filesystem
         self.files: dict[str, str] = {
             "readme.txt": "Welcome to VortecoreOS x86_64!\nCustom microkernel with RAMFS and interactive shell.\n",
-            "version.sys": "VortecoreOS Kernel 64-bit v0.4.0-release\n",
+            "version.sys": "VortecoreOS Kernel 64-bit v0.5.0-release\n",
             "motd": "Tip: Type 'help' to see all built-in commands.\n",
         }
+
+        # Simulated Virtual Memory & Page Tables
+        self.free_ram_kb = 120832
+        self.user_spaces = {}
 
         self.bind("<Key>", self._on_key)
         self._boot()
@@ -134,9 +138,36 @@ class VortecoreScreen(tk.Tk):
             self._print("  cat <filename>    Display file contents\n", 15)
             self._print("  touch <filename>  Create a new file in RAMFS\n", 15)
             self._print("  rm <filename>     Delete a file from RAMFS\n", 15)
+            self._print("  meminfo           Show physical RAM & 4-level paging stats\n", 15)
+            self._print("  spawn <prog>      Launch user-space program in isolated page space\n", 15)
             self._print("  clear             Clear the VGA terminal screen\n", 15)
             self._print("  sysinfo           Show kernel, memory & CPU architecture\n", 15)
             self._print("  reboot            Warm reboot kernel\n", 15)
+
+        elif cmd == "meminfo":
+            self._print("=== VORTECORE OS MEMORY & PAGING STATUS ===\n", 11)
+            self._print("Paging Scheme     : 4-Level x86_64 Long Mode (PML4 -> PDPT -> PD -> PT)\n", 15)
+            self._print("Page Frame Size   : 4096 bytes (4KB)\n", 15)
+            self._print("Physical Memory   : 128 MB Managed\n", 15)
+            self._print("Kernel Space      : Ring 0 Supervisor (CR0.WP Enabled)\n", 15)
+            self._print("User Isolation    : Ring 3 User Pages (PTE_USER Protection)\n", 15)
+            self._print(f"Free Physical RAM : {self.free_ram_kb} KB\n", 10)
+
+        elif cmd.startswith("spawn "):
+            prog = cmd[6:].strip()
+            if not prog:
+                self._print("spawn: missing program name\n", 12)
+            else:
+                cr3_hex = f"0x00000000{0x200000 + len(self.user_spaces) * 0x10000:08X}"
+                self.user_spaces[prog] = cr3_hex
+                self.free_ram_kb -= 16  # 4 pages allocated
+
+                self._print(f"[VMM] Allocating isolated User PML4 Address Space for '{prog}'...\n", 14)
+                self._print("[OK] User-Space Address Space created successfully!\n", 10)
+                self._print(f"     CR3 Base        : {cr3_hex}\n", 15)
+                self._print("     User Code Entry : 0x0000000000400000 (Ring 3 PTE_USER)\n", 15)
+                self._print("     User Stack Base : 0x00007FFFFFFFF000 (Isolated Stack)\n", 15)
+                self._print("     Kernel Memory   : PROTECTED (Illegal access triggers #PF)\n", 14)
 
         elif cmd == "ls":
             self._print(f"RAMFS Directory Listing ({len(self.files)} files):\n", 11)
