@@ -2,6 +2,7 @@
 
 A 64-bit x86_64 Microkernel written in pure `#![no_std]` Rust with Capability Security, Lock-Free IPC, and Hard Real-Time Determinism.
 
+[![Official Website](https://img.shields.io/badge/Website-vortecore.pages.dev-38bdf8?logo=cloudflare&logoColor=white)](https://vortecore.pages.dev)
 [![Discord](https://img.shields.io/badge/Discord-Join%20Vortex%20Community-5865F2?logo=discord&logoColor=white)](https://discord.gg/QtyBucygQ6)
 [![GitHub release](https://img.shields.io/github/v/release/athallajovian9-cyber/VortecoreOS?color=10B981)](https://github.com/athallajovian9-cyber/VortecoreOS/releases)
 
