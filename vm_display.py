@@ -55,25 +55,27 @@ class VortecoreScreen(tk.Tk):
         self._write_str(2, 0, "[OK] Fast A20 Gate enabled via Port 0x92", 2, 0)
         self._write_str(3, 0, "[OK] CPUID verified: AMD64 / Intel 64 Long Mode available", 2, 0)
         self._write_str(4, 0, "[OK] Initialized 4-Level 64-bit Paging (PML4, PDPT, PDT, PT)", 2, 0)
-        self._write_str(5, 0, "[OK] Enabled PAE (CR4.PAE = 1) and Long Mode (EFER.LME = 1)", 3, 0)
-        self._write_str(6, 0, "[OK] Paging active (CR0.PG = 1) -> CPU entered 64-bit Long Mode", 11, 0)
+        self._write_str(5, 0, "[OK] Switched CPU to 64-bit Long Mode (EFER.LME = 1, CR0.PG = 1)", 3, 0)
+        self._write_str(6, 0, "[OK] Loaded Kernel Image into Memory (0x100000) -> kernel_main()", 11, 0)
 
-        # Emulate 0xB8000 framebuffer writes from 64-bit kernel
-        msg = "=== VORTECORE OS [64-BIT x86_64 LONG MODE ACTIVE] ==="
-        col = (80 - len(msg)) // 2
-        row = 13
+        # Emulate kernel_main() execution
+        banner = "   VORTECORE OS -- 64-BIT NATIVE MICROKERNEL (x86_64)   "
+        col = (80 - len(banner)) // 2
+        row = 8
 
-        # Draw box
-        box_top = "╔" + "═" * (len(msg) + 4) + "╗"
-        box_mid = "║  " + msg + "  ║"
-        box_bot = "╚" + "═" * (len(msg) + 4) + "╝"
+        self._write_str(row - 1, col, "═" * len(banner), 9, 1)
+        self._write_str(row, col, banner, 15, 1)
+        self._write_str(row + 1, col, "═" * len(banner), 9, 1)
 
-        self._write_str(row - 1, col - 2, box_top, 11, 1)
-        self._write_str(row, col - 2, box_mid, 15, 1)
-        self._write_str(row + 1, col - 2, box_bot, 11, 1)
+        self._write_str(11, 4, "[OK] 64-bit Long Mode & System V ABI Stack configured", 10, 0)
+        self._write_str(12, 4, "[OK] COM1 Serial UART Driver (0x3F8, 38400 baud) ready", 10, 0)
+        self._write_str(13, 4, "[OK] CPU Vendor: GenuineIntel / AuthenticAMD (x86_64)", 10, 0)
+        self._write_str(14, 4, "[OK] Kernel Stack Base: 0x0000000000090000 (16-byte aligned)", 7, 0)
+        self._write_str(15, 4, "[OK] Page Table Base  : 0x0000000000001000 (PML4 Active)", 7, 0)
 
-        self._write_str(17, col + 2, "Architecture: x86_64 Long Mode (64-Bit RIP/RSP)", 14, 0)
-        self._write_str(18, col + 4, "Registers Active: RAX, RBX, RCX, RDX, R8-R15", 7, 0)
+        self._write_str(18, 4, "vortecore-x64# ", 10, 0)
+        self._write_str(18, 19, "kernel idle loop running. System ready for tasks.", 14, 0)
+
         self._write_str(23, 0, "Press Alt+F4 to exit 64-bit VM display.", 8, 0)
 
         self._render()

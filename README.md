@@ -7,6 +7,14 @@ A custom 64-bit x86_64 Operating System kernel & bootloader.
 ## Features
 - **64-bit Long Mode MBR Bootloader (`boot64.asm`)**: Transitions cleanly:
   `16-bit Real Mode` ➔ `32-bit Protected Mode` ➔ `64-bit Long Mode`.
+- **64-bit Kernel Core (`kernel.c`)**: Freestanding bare-metal microkernel:
+  - Custom VGA terminal console driver with color styling, auto-scrolling, and cursor tracking.
+  - Serial UART logging via COM1 (`0x3F8` at 38400 baud).
+  - CPUID vendor identification (`GenuineIntel` / `AuthenticAMD`).
+  - Formatted hexadecimal memory address printer (`kprint_hex`).
+  - Kernel idle halt loop (`hlt`) with System V AMD64 ABI 16-byte stack alignment.
+- **Kernel Trampoline (`kernel_entry.asm`)** & **Linker Script (`linker.ld`)**:
+  - Positions kernel entry at physical address `0x100000` (1MB).
 - **Hardware CPUID Checks**: Verifies AMD64 / Intel 64 Long Mode support before activating.
 - **4-Level Paging Engine**: Sets up identity mapping via `PML4T`, `PDPT`, `PDT`, and `PT` page tables.
 - **Registers & Control Flags**:
